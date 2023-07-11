@@ -15,6 +15,8 @@ This is being applied to DMRI images from ABCD release 5.0, those categorized un
 - between scan motion correction
 - rigid body registration to atlas and resampling to 1.7mm^3 LPI (requires rigid registration to T1 - see included json for matrix values)
 
+That last item on rigid body registration and resampling might be irrelevant in our case, because if you run `dump_registration_matrices.py` on the extracted images you see that all the registration matrices are identity.
+
 ## Extracting
 
 The downloaded data is in the form of `tgz` files that can be extracted to `nii` image files with bvals and bvecs provided as separate text files.
