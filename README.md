@@ -25,7 +25,7 @@ Set `ARCHIVES_PATH` in `./01_extract_images.sh` to point to downloaded ABCD imag
 
 ```sh
 mkdir extracted_images
-./01_extract_images.sh extracted_images/
+./extract_images.sh extracted_images/
 ```
 
 ## Generating NRRD Headers
