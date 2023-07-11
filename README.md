@@ -28,3 +28,16 @@ mkdir extracted_images
 ./01_extract_images.sh extracted_images/
 ```
 
+## Generating NRRD Headers
+
+Install the tool at [this repo](https://github.com/pnlbwh/conversion):
+```sh
+git clone https://github.com/pnlbwh/conversion.git
+pip install conversion/
+```
+
+Use the script to generate all NRRD headers:
+```sh
+python generate_nrrd_headers.py extracted_images/
+```
+
