@@ -17,6 +17,13 @@ This is being applied to DMRI images from ABCD release 5.0, those categorized un
 
 That last item on rigid body registration and resampling might be irrelevant in our case, because if you run `dump_registration_matrices.py` on the extracted images you see that all the registration matrices are identity.
 
+## Setup
+
+This section will use a proper `requirements.txt` at some point but for now:
+```sh
+pip install dipy dmipy pandas numpy
+```
+
 ## Extracting files
 
 The downloaded data is in the form of `tgz` files that can be extracted to `nii` image files with bvals and bvecs provided as separate text files.
@@ -48,4 +55,14 @@ Average the b0 images within each DWI sequence:
 python generate_b0_averages.py extracted_images/ b0_averages/
 ```
 
-(This section is incomplete right now)
+Install [HD-BET](https://github.com/MIC-DKFZ/HD-BET):
+```sh
+git clone https://github.com/MIC-DKFZ/HD-BET
+pip install -e HD-BET
+```
+
+Run brain extraction:
+```sh
+mkdir hdbet_output/
+hd-bet -i b0_averages/ -o hdbet_output/
+```

@@ -1,5 +1,6 @@
 extracted_images/
 b0_averages/
+hdbet_output
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
