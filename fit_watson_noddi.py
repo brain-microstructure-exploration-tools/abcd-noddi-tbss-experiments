@@ -68,6 +68,7 @@ for dwi_nii_directory in extracted_images_path.glob('*/*/*/dwi/'):
 
     fitted_parameters = NODDI_fit.fitted_parameters
     odi = fitted_parameters['SD1WatsonDistributed_1_SD1Watson_1_odi']
+    mu = fitted_parameters['SD1WatsonDistributed_1_SD1Watson_1_mu']
     vf_intra = fitted_parameters['SD1WatsonDistributed_1_partial_volume_0'] * fitted_parameters['partial_volume_1']
     vf_iso = fitted_parameters['partial_volume_0']
 
@@ -80,6 +81,7 @@ for dwi_nii_directory in extracted_images_path.glob('*/*/*/dwi/'):
     save_nifti(generate_output_filepath('vf_iso'), vf_iso, affine, img.header)
     save_nifti(generate_output_filepath('mse'), mse, affine, img.header)
     save_nifti(generate_output_filepath('r2'), r2, affine, img.header)
+    save_nifti(generate_output_filepath('mu'), mu, affine, img.header)
     print('saved!')
 
 
