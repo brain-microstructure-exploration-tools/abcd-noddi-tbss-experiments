@@ -30,11 +30,11 @@ pip install dmipy pathos numba dipy pandas numpy
 
 The downloaded data is in the form of `tgz` files that can be extracted to `nii` image files with bvals and bvecs provided as separate text files.
 
-Set `ARCHIVES_PATH` in `./01_extract_images.sh` to point to downloaded ABCD images.
+Run the following command with `ARCHIVES_PATH` replaced by a path to the directory containing downloaded ABCD image `tgz` files:
 
 ```sh
 mkdir extracted_images
-./extract_images.sh extracted_images/
+./extract_images.sh  ARCHIVES_PATH extracted_images/
 ```
 
 ## Generating NRRD Headers
