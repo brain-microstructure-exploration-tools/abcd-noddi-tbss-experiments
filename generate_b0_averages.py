@@ -3,6 +3,7 @@ import argparse
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
+from common import get_unique_file_with_extension
 
 parser = argparse.ArgumentParser(description='generates average b0 images for ABCD diffusion images')
 parser.add_argument('extracted_images_path', type=str, help='path to folder in which downloaded ABCD images were extracted')
@@ -10,14 +11,6 @@ parser.add_argument('output_dir', type=str, help='path to folder in which to sav
 args = parser.parse_args()
 extracted_images_path = Path(args.extracted_images_path)
 output_dir = Path(args.output_dir)
-
-def get_unique_file_with_extension(directory_path : Path, extension : str) -> Path:
-    l = list(directory_path.glob(f'*.{extension}'))
-    if len(l) == 0 :
-        raise Exception(f"No {extension} file was found in {directory_path}")
-    if len(l) > 1 :
-        raise Exception(f"Multiple {extension} files were found in {directory_path}")
-    return l[0]
 
 for dwi_nii_directory in extracted_images_path.glob('*/*/*/dwi/'):
 
