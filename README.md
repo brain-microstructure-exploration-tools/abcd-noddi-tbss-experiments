@@ -54,6 +54,7 @@ python generate_nrrd_headers.py extracted_images/
 
 Average the b0 images within each DWI sequence:
 ```sh
+mkdir b0_averages
 python generate_b0_averages.py extracted_images/ b0_averages/
 ```
 
