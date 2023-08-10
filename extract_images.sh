@@ -2,7 +2,7 @@
 set -e
 
 if [[ $# -ne 2 ]]; then
-  echo "Usage: ./01_extract_images.sh <ARCHIVES_PATH> <DESTINATION_PATH>"
+  echo "Usage: ./extract_images.sh <ARCHIVES_PATH> <DESTINATION_PATH>"
   echo "  where ARCHIVES_PATH is the directory to which directory to which the archive files were downloaded"
   echo "  and DESTINATION_PATH is the directory to which you want to dump the extracted images."
   exit

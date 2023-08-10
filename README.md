@@ -81,6 +81,18 @@ mkdir noddi_output/
 python fit_watson_noddi.py extracted_images/ hdbet_output/ noddi_output/
 ```
 
+## Estimate FODs
+
+Here we estimate fiber orientation distributions (FODs) using CSD.
+We use MRtrix3 for this, but it can also be done with dipy.
+To carry out this step, first [install MRtrix3](https://mrtrix.readthedocs.io/en/latest/installation/before_install.html#before-installing).
+Then:
+
+```sh
+mkdir csd_output/
+./estimate_fods_mrtrix.sh extracted_images/ hdbet_output/ csd_output/
+```
+
 ## TBSS
 
 I haven't done this part yet, but I think a good place to start looking is the great work here: [generalized TBSS pipeline](https://github.com/pnlbwh/tbss)
