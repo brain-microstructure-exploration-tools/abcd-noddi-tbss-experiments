@@ -2,7 +2,7 @@
 set -e
 
 if [[ $# -ne 3 ]]; then
-  echo "Usage: ./estimate_fods_mrtrix.sh <FOD_DIR> <MASK_DIR> <DESTINATION_PATH>"
+  echo "Usage: ./generate_population_template.sh <FOD_DIR> <MASK_DIR> <DESTINATION_PATH>"
   echo "  where FOD_DIR is the path to the fiber orientation distributions generated using one of the estimate_fods scripts"
   echo "  and MASK_DIR is the destination folder you used during brain extraction"
   echo "  and DESTINATION_PATH is the folder in which you want to save the template construction results."

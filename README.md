@@ -118,6 +118,10 @@ mkdir population_template
 ./generate_population_template.sh csd_output/fod/ hdbet_output/ population_template/
 ```
 
+## Coregister NODDI and DTI images using the population template
+
+(this is still WIP; it will use `transform_to_template.sh`)
+
 ## TBSS
 
 I haven't done this part yet, but I think a good place to start looking is the great work here: [generalized TBSS pipeline](https://github.com/pnlbwh/tbss)
