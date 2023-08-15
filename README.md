@@ -118,6 +118,8 @@ mkdir population_template
 ./generate_population_template.sh csd_output/fod/ hdbet_output/ population_template/
 ```
 
+This process can pause for user keystroke repeatedly if there are implausible seeming registrations. If you want to stop MRtrix3 `population_template` from pausing every time it detects an implausible registration, add the `-linear_no_pause` flag to the command in `generate_population_template.sh`. Probably it would be [better to debug the situation](https://community.mrtrix.org/t/population-template-error-on-linear-transformation/4081/2).
+
 ## Coregister NODDI and DTI images using the population template
 
 (this is still WIP; it will use `transform_to_template.sh`)
