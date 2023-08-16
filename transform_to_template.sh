@@ -17,7 +17,17 @@ TEMPLATE=$4
 
 find "$INPUT_DIR" -type f -name "*.nii.gz" | while read -r FILE_IN; do
     FILE_OUT=$OUTPUT_DIR/${FILE_IN#*/}
-    BASENAME= tr -d '\n' < <(sed 's/\(.*dwi\).*$/\1/' <(basename $FILE_IN .nii.gz))
-    echo $BASENAME # TODO use the basename to now define the correct warp WARP in WARPS_DIR
-    # TODO do the command: mrtransform $FILE_IN $FILE_OUT -warp $WARP -template $TEMPLATE
+
+    # ABCD dwi image filenames look like
+    # sub-NDARINVNLN4DGBT_ses-2YearFollowUpYArm1_run-01_dwi.nii
+    # and then we save images with somehting else tacked on to the name like
+    # sub-NDARINVNLN4DGBT_ses-2YearFollowUpYArm1_run-01_dwi_fa.nii.gz
+    # so this next line is meant to remove anything after the "dwi" at the end to get a basename like
+    # sub-NDARINVNLN4DGBT_ses-2YearFollowUpYArm1_run-01_dwi
+    BASENAME=$(python -c "from pathlib import Path; s=Path('$FILE_IN').name; print(s[:s.find('dwi')+3])")
+
+    mkdir -p $(dirname $FILE_OUT)
+
+    WARP_FILE=$WARPS_DIR/$BASENAME.mif
+    mrtransform $FILE_IN $FILE_OUT -warp_full $WARP_FILE -template $TEMPLATE -reorient_fod no
 done

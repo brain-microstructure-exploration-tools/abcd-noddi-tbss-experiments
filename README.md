@@ -25,6 +25,7 @@ This section will use a proper `requirements.txt` at some point but for now:
 ```sh
 pip install dmipy pathos numba dipy pandas numpy
 ```
+Some steps are based on MRtrix3 and require that you [install MRtrix3](https://mrtrix.readthedocs.io/en/latest/installation/before_install.html#before-installing) and configure your environemnt to find the MRtrix3 executables.
 
 ## Extracting files
 
@@ -93,7 +94,7 @@ python fit_watson_noddi.py extracted_images/ hdbet_output/ noddi_output/
 Here we estimate fiber orientation distributions (FODs) using CSD.
 We can use MRtrix3 or dipy for this. We include both approaches here, but currently recommend the MRtrix3 approach.
 
-To carry out the MRtrix3 processing, first [install MRtrix3](https://mrtrix.readthedocs.io/en/latest/installation/before_install.html#before-installing) and make sure your environment is configured to find the MRtrix3 executables. Then:
+To carry out the MRtrix3 processing:
 
 ```sh
 mkdir csd_output/
@@ -111,7 +112,7 @@ These two approaches use different algorithms for response function estimation. 
 
 ## Generate a population template
 
-Here we use MRtrix3 to generate a FOD population template. Again, first ensure that [MRtrix3](https://mrtrix.readthedocs.io/en/latest/installation/before_install.html#before-installing) is installed and that your environment is configured to find the MRtrix3 executables. Then:
+Here we use MRtrix3 to generate a FOD population template. Then:
 
 ```sh
 mkdir population_template
@@ -120,9 +121,16 @@ mkdir population_template
 
 This process can pause for user keystroke repeatedly if there are implausible seeming registrations. If you want to stop MRtrix3 `population_template` from pausing every time it detects an implausible registration, add the `-linear_no_pause` flag to the command in `generate_population_template.sh`. Probably it would be [better to debug the situation](https://community.mrtrix.org/t/population-template-error-on-linear-transformation/4081/2).
 
-## Coregister NODDI and DTI images using the population template
+## Coregister DTI and NODDI images using the population template
 
-(this is still WIP; it will use `transform_to_template.sh`)
+Again using MRtrix3:
+
+```sh
+mkdir dti_output_warped
+mkdir noddi_output_warped
+./transform_to_template.sh dti_output/ dti_output_warped/ population_template_mrtrix/warps/ population_template_mrtrix/template.nii.gz
+./transform_to_template.sh noddi_output/ noddi_output_warped/ population_template_mrtrix/warps/ population_template_mrtrix/template.nii.gz
+```
 
 ## TBSS
 
