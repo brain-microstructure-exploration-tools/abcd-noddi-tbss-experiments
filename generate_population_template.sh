@@ -13,6 +13,12 @@ fi
 # See https://abcdstudy.org/images/Protocol_Imaging_Sequences.pdf
 VOXEL_SIZE=1.7
 
+# We assume that the images are already rigidly co-registered (ABCD images are)
+# It may be sensible to still include an affine registration and change this to affine_nonlinear
+# because we might expect very slight brain volume increases... but I have found this
+# to cause more trouble than it is worth for the small overall brain volume variation.
+REG_TYPE=nonlinear
+
 FOD_DIR=$1
 MASK_INPUT_DIR=$2
 OUTPUT_DIR=$3
@@ -34,4 +40,4 @@ for FILE in "$MASK_INPUT_DIR"/*_mask.nii.gz; do
 done
 
 # run the mrtrix command
-population_template $FOD_STAGING_DIR $OUTPUT_DIR/template.nii.gz -mask_dir $MASK_STAGING_DIR -warp_dir $OUTPUT_DIR/warps -transformed_dir $OUTPUT_DIR/transformed_images -template_mask $OUTPUT_DIR/template_mask.nii.gz -voxel_size $VOXEL_SIZE
+population_template $FOD_STAGING_DIR $OUTPUT_DIR/template.nii.gz -mask_dir $MASK_STAGING_DIR -warp_dir $OUTPUT_DIR/warps -transformed_dir $OUTPUT_DIR/transformed_images -template_mask $OUTPUT_DIR/template_mask.nii.gz -voxel_size $VOXEL_SIZE -type $REG_TYPE
