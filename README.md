@@ -92,23 +92,12 @@ python fit_watson_noddi.py extracted_images/ hdbet_output/ noddi_output/
 ## Estimate FODs
 
 Here we estimate fiber orientation distributions (FODs) using CSD.
-We can use MRtrix3 or dipy for this. We include both approaches here, but currently recommend the MRtrix3 approach.
-
-To carry out the MRtrix3 processing:
+We use MRtrix3 for this. To carry out the MRtrix3 processing:
 
 ```sh
 mkdir csd_output/
 ./estimate_fods_mrtrix.sh extracted_images/ hdbet_output/ csd_output/
 ```
-
-To instead carry out dipy processing, first make sure you did the DTI fitting above (the FA is used to support the automatic response function estimation algorithm). Then:
-
-```sh
-mkdir csd_output/
-python estimate_fods_dipy.py extracted_images/ hdbet_output/ dti_output/ csd_output/
-```
-
-These two approaches use different algorithms for response function estimation. The dipy approach given here in `estimate_fods_dipy.py` does not work with a common group mean response function, instead using subject-level estimated response functions for doing CSD for each subject. This might be a bad thing; we need to think about it. The dipy approach here is also slower. However the dipy implementation is a little more pleasant to study, being part of a more general and elegant framework.
 
 ## Generate a population template
 

@@ -8,6 +8,7 @@ from dipy.reconst.csdeconv import recursive_response
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 import numpy as np
 
+print("WARNING: This script is being developed and there are known issues with it: https://github.com/brain-microstructure-exploration-tools/abcd-noddi-tbss-experiments/issues/1")
 
 # === Parse args ===
 
