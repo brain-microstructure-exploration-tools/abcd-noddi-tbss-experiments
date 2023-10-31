@@ -36,7 +36,6 @@ for DWI_PATH in "$EXTRACTED_IMAGES_PATH"/*/*/*/dwi/; do
   BASENAME=$(basename $DWI .nii)
   MASK=$MASKS_PATH/${BASENAME}_mask.nii.gz
   dwi2response dhollander $DWI $RESPONSE_PATH/WM/$BASENAME.txt $RESPONSE_PATH/GM/$BASENAME.txt $RESPONSE_PATH/CSF/$BASENAME.txt -fslgrad $BVEC $BVAL -mask $MASK
-  break # TODO REMOVE
 done
 
 # Taking advice from
@@ -54,5 +53,4 @@ for DWI_PATH in "$EXTRACTED_IMAGES_PATH"/*/*/*/dwi/; do
   BASENAME=$(basename $DWI .nii)
   MASK=$MASKS_PATH/${BASENAME}_mask.nii.gz
   dwi2fod msmt_csd $DWI $AVERAGE_RESPONSE_WM $FOD_PATH/WM/${BASENAME}_wmfod.nii.gz $AVERAGE_RESPONSE_GM $FOD_PATH/GM/${BASENAME}_gm.nii.gz $AVERAGE_RESPONSE_CSF $FOD_PATH/CSF/${BASENAME}_csf.nii.gz -fslgrad $BVEC $BVAL -mask $MASK
-  break # TODO REMOVE
 done
