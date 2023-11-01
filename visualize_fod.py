@@ -17,15 +17,11 @@
 # The goal of this notebook is to examine a FOD output and visualize it without using any purpose made visualization tool, requiring me to prove that I understand how to interpret the FOD coefficients.
 
 # %%
-# !pip install "itkwidgets[notebook]==1.0a37"
-# !pip install "numpy==1.23.5"
-
-# %%
 from pathlib import Path
 import numpy as np
 import nibabel as nib
-from itkwidgets import view
 from scipy.special import sph_harm
+from IPython.display import display, Javascript
 
 # %%
 fod_path = Path('csd_output_mrtrix_msmt/fod/WM/sub-NDARINV1JXDFV9Z_ses-baselineYear1Arm1_run-01_dwi_wmfod.nii.gz')
@@ -59,7 +55,7 @@ l, m = np.array(list(sph_harm_l_m(8)),dtype=int).T
 
 
 # %%
-# follows https://mrtrix.readthedocs.io/en/latest/concepts/spherical_harmonics.html#storage-conventions
+# follows formula at https://mrtrix.readthedocs.io/en/latest/concepts/spherical_harmonics.html#storage-conventions
 def sph_harm_real(m,l,ph,th):
     y = sph_harm(m,l,ph,th)
     ynegm = sph_harm(-m,l,ph,th)
@@ -70,14 +66,6 @@ def sph_harm_real(m,l,ph,th):
 
 # %%
 sph_harm_vals = sph_harm_real(m[:,np.newaxis],l[:,np.newaxis],ph.reshape(1,-1),th.reshape(1,-1))
-
-
-# %%
-def view_voxel(i,j,k):
-    fod_vals = (img_array[i,j,k] @ sph_harm_vals)
-    scaled_sphere_pts = fod_vals[:,np.newaxis] * sphere_points
-    view(np.concatenate([scaled_sphere_pts]*3,axis=0))
-
 
 # %%
 dwi_array[79,87,84,0]
@@ -90,4 +78,68 @@ dwi_array[79,87,84,0]
 # ```
 
 # %%
-view_voxel(84,78,85)
+vtk_js_viewer_code = """
+const script = document.createElement('script');
+script.src = 'https://unpkg.com/vtk.js';
+script.onload = () => {
+  const renderWindow = vtk.Rendering.Core.vtkRenderWindow.newInstance();
+  const renderer = vtk.Rendering.Core.vtkRenderer.newInstance({ background: [0,0,0] });
+  const actor = vtk.Rendering.Core.vtkActor.newInstance();
+  const mapper = vtk.Rendering.Core.vtkMapper.newInstance();
+  
+  const polydata = vtk.Common.DataModel.vtkPolyData.newInstance();
+  // const xyz = [1,0,0,0,1,0,0,0,1,-1,0,0,0,-1,0,0,0,-1];
+  polydata.getPoints().setData(Float32Array.from(xyz), 3);
+  const nbPoints = xyz.length / 3;
+  const vertex = new Uint16Array(nbPoints + 1);
+  vertex[0] = nbPoints;
+  for (let i = 0; i < nbPoints; i++) {
+     vertex[i+1] = i;
+  }
+  polydata.getVerts().setData(vertex);
+
+  renderWindow.addRenderer(renderer);
+  renderer.addActor(actor);
+  actor.setMapper(mapper);
+  actor.getProperty().setPointSize(1); // Set the point size here!
+  mapper.setInputData(polydata);
+  renderer.resetCamera();
+  
+  const openGLRenderWindow = vtk.Rendering.OpenGL.vtkRenderWindow.newInstance();
+  renderWindow.addView(openGLRenderWindow);
+  
+  const container = document.createElement('div');
+  container.style.width = '800px';
+  container.style.height = '600px';
+  element.appendChild(container);
+  openGLRenderWindow.setContainer(container);
+  
+  const { width, height } = container.getBoundingClientRect();
+  openGLRenderWindow.setSize(width, height);
+  
+  const interactor = vtk.Rendering.Core.vtkRenderWindowInteractor.newInstance();
+  interactor.setView(openGLRenderWindow);
+  interactor.initialize();
+  interactor.bindEvents(container);
+  
+  const interactorStyle = vtk.Interaction.Style.vtkInteractorStyleTrackballCamera.newInstance();
+  interactor.setInteractorStyle(interactorStyle);
+  
+  renderWindow.render();
+};
+document.head.appendChild(script);
+"""
+
+def view_voxel(i,j,k):
+    fod_vals = (img_array[i,j,k] @ sph_harm_vals)
+    scaled_sphere_pts = fod_vals[:,np.newaxis] * sphere_points
+    
+    js_code = f"""
+    const xyz = {list(scaled_sphere_pts.reshape(-1))};
+    """
+    js_code += vtk_js_viewer_code
+    display(Javascript(js_code))
+
+
+# %%
+view_voxel(81,72,86)
