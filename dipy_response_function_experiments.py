@@ -47,6 +47,7 @@ output_dir_fod.mkdir(exist_ok=True)
 
 # %%
 dwi_nii_directory = np.random.choice(list(extracted_images_path.glob('*/*/*/dwi/')))
+dwi_nii_directory = Path('extracted_images/NDARINV1JXDFV9Z_baselineYear1Arm1_ABCD-MPROC-DTI_20161206184105/sub-NDARINV1JXDFV9Z/ses-baselineYear1Arm1/dwi/')
 
 # %%
 nii_path = get_unique_file_with_extension(dwi_nii_directory, 'nii')
@@ -79,13 +80,13 @@ md_data, md_affine, md_img = load_nifti(str(md_path), return_img=True)
 # Warning this cell takes a long time to run and is not needed for the things that follow.
 
 # below approach and parameters are taken from the example https://dipy.org/documentation/1.1.0./examples_built/reconst_csd/
-wm_mask = (np.logical_or(fa_data >= 0.4, (np.logical_and(fa_data >= 0.15, md_data >= 0.0011))))
-response = recursive_response(gtab, data, mask=wm_mask, sh_order=8, peak_thr=0.01, init_fa=0.08, init_trace=0.0021, iter=2, convergence=0.1, parallel=True)
+# wm_mask = (np.logical_or(fa_data >= 0.4, (np.logical_and(fa_data >= 0.15, md_data >= 0.0011))))
+# response = recursive_response(gtab, data, mask=wm_mask, sh_order=8, peak_thr=0.01, init_fa=0.08, init_trace=0.0021, iter=2, convergence=0.1, parallel=True)
 
 # %%
 with open(Path('csd_output_mrtrix/average_response.txt')) as f:
     mrtrix_response_function_string = f.readlines()[-1]
-list(map(float,mrtrix_response_function_string.strip().split(' ')))
+print(list(map(float,mrtrix_response_function_string.strip().split(' '))))
 
 # %%
 response_mrtrix = AxSymShResponse(300,np.array(list(map(float,mrtrix_response_function_string.strip().split(' ')))))
