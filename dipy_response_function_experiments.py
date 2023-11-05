@@ -95,7 +95,8 @@ response_mrtrix = AxSymShResponse(300,np.array(list(map(float,mrtrix_response_fu
 # The 300 looks like it's coming from nowhere, but actually in dipy, the `response.S0` is only saved [here](https://github.com/dipy/dipy/blob/1d558fce90d38e71cc16ed4c7e48bf1116ae459b/dipy/reconst/csdeconv.py#L262) when you construct the `ConstrainedSphericalDeconvModel` object. When you call the `fit` method you can see [here](https://github.com/dipy/dipy/blob/1d558fce90d38e71cc16ed4c7e48bf1116ae459b/dipy/reconst/csdeconv.py#L289-L293) that the S0 value not used anywhere. It's only used in the `predict` method, which we are not really using here because we are not trying to simulate signals right now. So I think for the CSD fit to generate a FOD, the S0 value doesn't really matter.
 
 # %%
-csd_model = ConstrainedSphericalDeconvModel(gtab, response_mrtrix, sh_order=8)
+sh_order = 8
+csd_model = ConstrainedSphericalDeconvModel(gtab, response_mrtrix, sh_order=sh_order)
 
 # %%
 csd_fit = csd_model.fit(data, mask=mask_data)
@@ -109,8 +110,22 @@ csd_fit
 
 # %%
 csd_shm_coeff = csd_fit.shm_coeff
+
+from dipy.reconst.shm import sph_harm_ind_list
+def get_dipy_to_mrtrix_permutation(sh_order):
+    m,l = sph_harm_ind_list(sh_order)
+    basis_indices = list(zip(l,m)) # dipy basis ordering
+    dimensionality = len(basis_indices)
+    basis_indices_permuted = list(zip(l,-m)) # mrtrix basis ordering
+    permutation = [basis_indices.index(basis_indices_permuted[i]) for i in range(dimensionality)] # dipy to mrtrix permution
+    return permutation
+csd_shm_coeff_mrtrix = csd_shm_coeff[:,:,:,get_dipy_to_mrtrix_permutation(sh_order)]
+subject_output_file_alt2 = subject_output_file.parent / f"{subject_output_file.name.split('.')[0]}_mrtrixResponse_mrtrixConverted.nii.gz"
+
 save_nifti(subject_output_file_alt, csd_shm_coeff, affine, img.header)
 print(f'saved {subject_output_file_alt}')
+save_nifti(subject_output_file_alt2, csd_shm_coeff_mrtrix, affine, img.header)
+print(f'saved {subject_output_file_alt2}')
 
 # %% [markdown]
 # I visually inspected three images using `mrview`:
