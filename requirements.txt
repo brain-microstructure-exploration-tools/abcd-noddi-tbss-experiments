@@ -69,7 +69,7 @@ nibabel==5.1.0
 notebook==7.0.6
 notebook-shim==0.2.3
 numba==0.58.1
-numpy==1.24.4
+numpy==1.23.0
 osqp==0.6.3
 overrides==7.4.0
 packaging==23.2
