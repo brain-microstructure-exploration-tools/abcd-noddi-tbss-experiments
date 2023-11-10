@@ -21,9 +21,9 @@ That last item on rigid body registration and resampling might be irrelevant in 
 
 ## Setup
 
-This section will use a proper `requirements.txt` at some point but for now:
+Set up a python 3.8 environment and install the required packages:
 ```sh
-pip install dmipy pathos numba dipy pandas numpy
+pip install -r requirements.txt
 ```
 Some steps are based on MRtrix3 and require that you [install MRtrix3](https://mrtrix.readthedocs.io/en/latest/installation/before_install.html#before-installing) and configure your environemnt to find the MRtrix3 executables.
 
