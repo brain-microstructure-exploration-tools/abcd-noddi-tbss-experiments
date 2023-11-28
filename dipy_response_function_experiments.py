@@ -18,9 +18,9 @@
 #
 # Here is how to use mrview to get the visualization going:
 # ```sh
-# INPUT_DIR=extracted_images/NDARINV1JXDFV9Z_2YearFollowUpYArm1_ABCD-MPROC-DTI_20181219171951/sub-NDARINV1JXDFV9Z/ses-2YearFollowUpYArm1/dwi/
-# STEM=sub-NDARINV1JXDFV9Z_ses-2YearFollowUpYArm1_run-01_dwi
-# mrview $INPUT_DIR/$STEM.nii -odf.load_sh csd_output_dipy/fod/${STEM}_fod.nii.gz
+# INPUT_DIR=extracted_images/NDARINV1JXDFV9Z_baselineYear1Arm1_ABCD-MPROC-DTI_20161206184105/sub-NDARINV1JXDFV9Z/ses-baselineYear1Arm1/dwi/
+# STEM=sub-NDARINV1JXDFV9Z_ses-baselineYear1Arm1_run-01_dwi
+# mrview $INPUT_DIR/$STEM.nii --fov 100 --voxel 69,69,84 -odf.load_sh csd_output_dipy/fod/${STEM}_fod.nii.gz
 # ```
 #
 # The first thing to look at is the response function. What happens if I use in the dipy approach the same response function that was generated using the mrtrix method.
@@ -57,15 +57,22 @@ subject_output_file = output_dir_fod/(nii_path.stem + '_fod.nii.gz')
 if subject_output_file.exists():
         print(f"Warning: output for subject {nii_path.stem} already exists at the file\n\t{subject_output_file}")
 
-bval_path = get_unique_file_with_extension(dwi_nii_directory, 'bval')
-bvec_path = get_unique_file_with_extension(dwi_nii_directory, 'bvec')
-bvals, bvecs = read_bvals_bvecs(str(bval_path), str(bvec_path))
-gtab = gradient_table(bvals, bvecs)
-
 mask_path = masks_path/(nii_path.stem + '_mask.nii.gz')
 
 data, affine, img = load_nifti(str(nii_path), return_img=True)
 mask_data, mask_affine, mask_img = load_nifti(str(mask_path), return_img=True)
+
+bval_path = get_unique_file_with_extension(dwi_nii_directory, 'bval')
+bvec_path = get_unique_file_with_extension(dwi_nii_directory, 'bvec')
+bvals, bvecs = read_bvals_bvecs(str(bval_path), str(bvec_path))
+
+# %%
+if np.linalg.det(affine[:3,:3]) < 0:
+    bvecs[:,0] = -bvecs[:,0]
+    print("Negating the x coordinate of all the b-vectors!")
+
+# %%
+gtab = gradient_table(bvals, bvecs)
 
 subject_dti_dir = dti_path/(nii_path.stem)
 if not subject_dti_dir.exists():
@@ -80,8 +87,32 @@ md_data, md_affine, md_img = load_nifti(str(md_path), return_img=True)
 # Warning this cell takes a long time to run and is not needed for the things that follow.
 
 # below approach and parameters are taken from the example https://dipy.org/documentation/1.1.0./examples_built/reconst_csd/
-# wm_mask = (np.logical_or(fa_data >= 0.4, (np.logical_and(fa_data >= 0.15, md_data >= 0.0011))))
-# response = recursive_response(gtab, data, mask=wm_mask, sh_order=8, peak_thr=0.01, init_fa=0.08, init_trace=0.0021, iter=2, convergence=0.1, parallel=True)
+wm_mask = (np.logical_or(fa_data >= 0.4, (np.logical_and(fa_data >= 0.15, md_data >= 0.0011))))
+response = recursive_response(gtab, data, mask=wm_mask, sh_order=8, peak_thr=0.01, init_fa=0.08, init_trace=0.0021, iter=2, convergence=0.1, parallel=True)
+
+# %%
+sh_order = 8
+csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=sh_order)
+csd_fit = csd_model.fit(data, mask=mask_data)
+csd_shm_coeff = csd_fit.shm_coeff
+subject_output_file_alt = subject_output_file.parent / f"{subject_output_file.name.split('.')[0]}_dipyTaxResponse_mrtrixConverted_bvecXflipped.nii.gz"
+from dipy.reconst.shm import sph_harm_ind_list
+def get_dipy_to_mrtrix_permutation(sh_order):
+    m,l = sph_harm_ind_list(sh_order)
+    basis_indices = list(zip(l,m)) # dipy basis ordering
+    dimensionality = len(basis_indices)
+    basis_indices_permuted = list(zip(l,-m)) # mrtrix basis ordering
+    permutation = [basis_indices.index(basis_indices_permuted[i]) for i in range(dimensionality)] # dipy to mrtrix permution
+    return permutation
+csd_shm_coeff_mrtrix = csd_shm_coeff[:,:,:,get_dipy_to_mrtrix_permutation(sh_order)]
+
+save_nifti(subject_output_file_alt, csd_shm_coeff_mrtrix, affine, img.header)
+print(f'saved {subject_output_file_alt}')
+
+# %% [markdown]
+# Below are legacy parts of this notebook.
+#
+# ----
 
 # %%
 with open(Path('csd_output_mrtrix/average_response.txt')) as f:

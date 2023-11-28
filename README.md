@@ -3,7 +3,7 @@
 This is an experiment in running part of a NODDI TBSS pipeline on diffusion imaging from the ABCD study dataset.
 The purpose is mainly for me to become familiar with some of the tools involved in the pipeline.
 
-This is a WIP and is currently stalled, possibly to be resumed later. The TBSS part does not exist yet, nor does registration and template generation.
+This is a WIP. The TBSS part does not exist yet.
 
 ## The data
 
@@ -50,6 +50,7 @@ Use the script to generate all NRRD headers:
 ```sh
 python generate_nrrd_headers.py extracted_images/
 ```
+Having the NRRD headers allows the DWIs to be loaded in 3D Slicer and recognized as DWIs.
 
 ## Brain extraction
 
@@ -91,13 +92,38 @@ python fit_watson_noddi.py extracted_images/ hdbet_output/ noddi_output/
 
 ## Estimate FODs
 
-Here we estimate fiber orientation distributions (FODs) using CSD.
-We use MRtrix3 for this. To carry out the MRtrix3 processing:
+Here we estimate fiber orientation distributions (FODs) using CSD. We can use MRtrix3 or dipy for this. We save the output FODs as a 3D image of functions representated in a basis of real spherical harmonics. Regardless of whether MRtrix3 or dipy is used, the output saved is in terms of a basis of real spherical harmonics that follows the MRtrix3 convention. In the convention, the basis functions $Y^\text{(mrtrix)}_{lm}(\theta,\phi)$ are given in terms of the complex spherical harmonics $Y^m_l(\theta,\phi)$ as follows:
+```math
+Y^\text{(mrtrix)}_{lm} =
+\left\{
+\begin{array}{ll}
+\sqrt{2}\ \textrm{Im}[Y^{-m}_l] & \text{if $m<0$}\\
+Y^0_l & \text{if $m=0$}\\
+\sqrt{2}\ \textrm{Re}[Y^{m}_l] & \text{if $m>0$}
+\end{array}
+\right.
+```
+
+### MRTrix3 FODs
+
+
+To carry out the MRtrix3 processing:
 
 ```sh
 mkdir csd_output/
 ./estimate_fods_mrtrix.sh extracted_images/ hdbet_output/ csd_output/
 ```
+
+### DIPY FODs
+
+To carry out the DIPY processing instead:
+
+```sh
+mkdir csd_output/
+python estimate_fods_dipy.py extracted_images/ hdbet_output/ dti_output/ csd_output/
+```
+
+Note: This pipeline is designed to work with the preprocessed ABCD images, and we have found that for these images the DIPY processing script must flip the x-axis of the b-vectors. [It's not clear why.](https://github.com/brain-microstructure-exploration-tools/abcd-noddi-tbss-experiments/issues/7#issuecomment-1828736081)
 
 ## Generate a population template
 
