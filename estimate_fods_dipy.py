@@ -3,7 +3,7 @@ import argparse
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
-from common import get_unique_file_with_extension
+from common import get_unique_file_with_extension, get_dipy_to_mrtrix_permutation
 from dipy.reconst.csdeconv import recursive_response
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 import numpy as np
@@ -40,6 +40,7 @@ for dwi_nii_directory in extracted_images_path.glob('*/*/*/dwi/'):
     bvec_path = get_unique_file_with_extension(dwi_nii_directory, 'bvec')
 
     bvals, bvecs = read_bvals_bvecs(str(bval_path), str(bvec_path))
+    bvecs[:,0] = -bvecs[:,0] # https://github.com/brain-microstructure-exploration-tools/abcd-noddi-tbss-experiments/issues/7
     gtab = gradient_table(bvals, bvecs)
 
     mask_path = masks_path/(nii_path.stem + '_mask.nii.gz')
@@ -66,9 +67,9 @@ for dwi_nii_directory in extracted_images_path.glob('*/*/*/dwi/'):
     csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=8)
     csd_fit = csd_model.fit(data, mask=mask_data)
 
-    csd_shm_coeff = csd_fit.shm_coeff
+    csd_shm_coeff_mrtrix = csd_fit.shm_coeff[:,:,:,get_dipy_to_mrtrix_permutation(8)]
     print(f"processed {nii_path.stem}\nsaving data...")
-    save_nifti(subject_output_file, csd_shm_coeff, affine, img.header)
+    save_nifti(subject_output_file, csd_shm_coeff_mrtrix, affine, img.header)
     print('saved!')
 
 
