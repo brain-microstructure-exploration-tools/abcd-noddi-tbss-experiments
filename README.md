@@ -21,10 +21,22 @@ That last item on rigid body registration and resampling might be irrelevant in 
 
 ## Setup
 
-Set up a python 3.8 environment and install the required packages:
+Set up two python 3.8 environments, a main one and one for dmipy.
+Install the required packages as follows:
 ```sh
+python3.8 -m venv .venv
+. .venv/bin/activate
+pip install git+https://github.com/dipy/dipy.git@871b498c2bab8ad1c4961e2dbd594063bd877440
 pip install -r requirements.txt
+deactivate
+python3.8 -m venv .venv_dmipy
+. .venv_dmipy/bin/activate
+pip install -r requirements_dmipy.txt
+deactivate
 ```
+
+Use the main virtual environment for most steps, but use the dmipy environment for the NODDI computation steps.
+
 Some steps are based on MRtrix3 and require that you [install MRtrix3](https://mrtrix.readthedocs.io/en/latest/installation/before_install.html#before-installing) and configure your environemnt to find the MRtrix3 executables.
 
 ## Extracting files
@@ -84,6 +96,8 @@ python fit_dti.py extracted_images/ hdbet_output/ dti_output/
 The NODDI fit takes a while to run. Almost 3 hours per image with parallel processing enabled on my 12-core machine.
 
 It uses [dmipy](https://github.com/AthenaEPI/dmipy), following [this tutorial](https://nbviewer.org/github/AthenaEPI/dmipy/blob/master/examples/tutorial_setting_up_acquisition_scheme.ipynb) for creating the acquisition scheme object and [this tutorial](https://nbviewer.org/github/AthenaEPI/dmipy/blob/master/examples/example_noddi_watson.ipynb) for constructing a Watson NODDI model.
+
+Remember to use the dmipy python environment that you set up above, not the main python environment.
 
 ```sh
 mkdir noddi_output/
