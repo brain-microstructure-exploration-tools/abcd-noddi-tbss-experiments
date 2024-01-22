@@ -24,10 +24,11 @@ import argparse
 from dipy.io.image import load_nifti, save_nifti
 from dipy.io import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
-from common import get_unique_file_with_extension
+from common import get_unique_file_with_extension, read_dipy_response, write_dipy_response
 from dipy.reconst.csdeconv import recursive_response
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.reconst.csdeconv import AxSymShResponse
+from dipy.reconst.shm import convert_sh_descoteaux_tournier
 import numpy as np
 
 # %%
@@ -131,113 +132,114 @@ if ratio > 0.3:
     warnings.warn("Ratio of response diffusion tensor eigenvalues is greater than 0.3. For a response function we expect more prolateness. Something may be wrong.")
 
 # %%
-subject_output_file
-
-# %%
 sh_order = 8
 csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=sh_order)
 csd_fit = csd_model.fit(data, mask=mask_data)
 csd_shm_coeff = csd_fit.shm_coeff
-subject_output_file_alt = subject_output_file.parent / f"{subject_output_file.name.split('.')[0]}.nii.gz"
-from dipy.reconst.shm import sph_harm_ind_list
-def get_dipy_to_mrtrix_permutation(sh_order):
-    m,l = sph_harm_ind_list(sh_order)
-    basis_indices = list(zip(l,m)) # dipy basis ordering
-    dimensionality = len(basis_indices)
-    basis_indices_permuted = list(zip(l,-m)) # mrtrix basis ordering
-    permutation = [basis_indices.index(basis_indices_permuted[i]) for i in range(dimensionality)] # dipy to mrtrix permution
-    return permutation
-csd_shm_coeff_mrtrix = csd_shm_coeff[:,:,:,get_dipy_to_mrtrix_permutation(sh_order)]
+csd_shm_coeff_mrtrix = convert_sh_descoteaux_tournier(csd_shm_coeff)
 
-save_nifti(subject_output_file_alt, csd_shm_coeff_mrtrix, affine, img.header)
-print(f'saved {subject_output_file_alt}')
-
-# %%
+save_nifti(subject_output_file, csd_shm_coeff_mrtrix, affine, img.header)
+print(f'saved {subject_output_file}')
 
 # %% [markdown]
-# old stuff below
-#
 # ---
-
-# %%
-sh_order = 8
-csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=sh_order)
-csd_fit = csd_model.fit(data, mask=mask_data)
-csd_shm_coeff = csd_fit.shm_coeff
-subject_output_file_alt = subject_output_file.parent / f"{subject_output_file.name.split('.')[0]}_dipyTaxResponse_mrtrixConverted_bvecXflipped.nii.gz"
-from dipy.reconst.shm import sph_harm_ind_list
-def get_dipy_to_mrtrix_permutation(sh_order):
-    m,l = sph_harm_ind_list(sh_order)
-    basis_indices = list(zip(l,m)) # dipy basis ordering
-    dimensionality = len(basis_indices)
-    basis_indices_permuted = list(zip(l,-m)) # mrtrix basis ordering
-    permutation = [basis_indices.index(basis_indices_permuted[i]) for i in range(dimensionality)] # dipy to mrtrix permution
-    return permutation
-csd_shm_coeff_mrtrix = csd_shm_coeff[:,:,:,get_dipy_to_mrtrix_permutation(sh_order)]
-
-save_nifti(subject_output_file_alt, csd_shm_coeff_mrtrix, affine, img.header)
-print(f'saved {subject_output_file_alt}')
+#
+# **How do we average response functions when they are in the DIPY representation of a diffusion tensor?**
+#
+# There is a beautiful way of interpolating or averaging diffusion tensors which is based on log-euclidean metrics, described by [Arsigny 2006](https://doi.org/10.1002/mrm.20965). A log-euclidean metric is a metric on the space of $n\times n$ real positive definite symmetric matrices (called simply *tensors* in that work) that is defined by
+# $$d(S_1,S_2)=|| \log(S_1) - \log(S_2) ||$$
+# where $\log$ is the matrix logarithm and where $||\cdot||$ is just any old vector space norm on the vector space of symmetric matrices under addition. This makes sense because in fact the $\log$ of a tensor will always be a symmetric matrix. The simplest case is where $||\cdot||$ is the frobenius norm (in which case for a tensor you could write it as $||S||=\sqrt{\operatorname{Trace}(S^2)}$) and that is also a great case because you get very nice invariance properties from the metric. Anyway as we can see in Arsigny eqn [3] the Frechet mean of tensors with this metric is given by simply taking the ordinary additive in matrix-log space.
+#
+# Taking matrix log is super easy when you have a tensor: just diagonalize it to $S=RDR^{-1}$ and you are guaranteed $R$ orthogonal and $D$ having real positive values (the eigenvalues) down the diagonal. Then your log is
+# $$
+# \log(S) = R\log(D)R^{-1}
+# $$
+# where $\log(D)$ is simply a component-wise log of the diagonal matrix $D$.
+#
+# In my case the response functions used by dipy are represnted as eigenvalues $(\lambda_1, \lambda_2, \lambda_3=\lambda_2)$, with $\lambda_1$ being larger so that it is a prolate tensor, and also an overall non-diffusion weighted signal level $S_0$. Eigenvectors are not specified because a response function is always for a z-axis oriented pure fiber population. You can see [here](https://github.com/dipy/dipy/blob/9153a852a511b07ffc141becfbd9a96ca42e9a90/dipy/reconst/mcsd.py#L478-L481) or [here](https://github.com/dipy/dipy/blob/9153a852a511b07ffc141becfbd9a96ca42e9a90/dipy/reconst/csdeconv.py#L459-L461) that dipy just fixes the eigenvectors and [computes](https://github.com/dipy/dipy/blob/9153a852a511b07ffc141becfbd9a96ca42e9a90/dipy/sims/voxel.py#L321) a response signal from the diffusion tensor representation. So if I have a family of response functions given by $(\lambda_1^{(i)}, \lambda_2^{(i)}, S_0^{(i)})$ for subjects $i\in\{1,\ldots, N\}$ then
+#
+# - the diffusion tensors represented by the eigenvalue pairs are all oriented the same way and so we can think of all diffusion tensors as being diagonalized by the same $R$. therefore the log-euclidean mean of the diffusion tensors is 
+#   $$\exp\left(\frac{1}{N}\sum_i R\log(\operatorname{diag}( \lambda_1^{(i)},\lambda_2^{(i)},\lambda_2^{(i)} ))R^{-1}\right)\\
+#   =R\exp\left(\frac{1}{N}\sum_i\operatorname{diag}( \log(\lambda_1^{(i)}),\log(\lambda_2^{(i)}),\log(\lambda_2^{(i)}) )\right)R^{-1}\\
+#   =R\exp\left(\operatorname{diag}\left( \log\left(\left(\prod_i\lambda_1^{(i)}\right)^{\frac{1}{N}}\right),\log\left(\left(\prod_i\lambda_2^{(i)}\right)^{\frac{1}{N}}\right),\log\left(\left(\prod_i\lambda_2^{(i)}\right)^{\frac{1}{N}}\right) \right)\right)R^{-1}\\
+#   =R\operatorname{diag}\left( \left(\prod_i\lambda_1^{(i)}\right)^{\frac{1}{N}},\left(\prod_i\lambda_2^{(i)}\right)^{\frac{1}{N}},\left(\prod_i\lambda_2^{(i)}\right)^{\frac{1}{N}} \right)R^{-1}
+#   $$
+#   which is exactly the diffusion tensor represented by the geometric mean of eigenvalues across subjects. The signals
+# - and the non-diffusion-weighted signals can simply be averaged (averaging them is IMO similar to averaging the 0th coefficient of the spherical harmonic representation of response functions).
+#
+# So actually a good way to do group averages is to simply take the geometric mean of the eigenvalues and arithmetic mean of the signal:
+# $$
+# \left(
+# \left(\prod_{i=1}^N\lambda_1^{(i)}\right)^{\frac{1}{N}},
+# \left(\prod_{i=1}^N\lambda_2^{(i)}\right)^{\frac{1}{N}},
+# \frac{1}{N}\sum_{i=1}^N S_0^{(i)}
+# \right)
+# $$
+# This is effectively achieving the log-euclidean mean of Arsigny 2006.
 
 # %% [markdown]
-# Below are legacy parts of this notebook.
+# ---
 #
-# ----
+# briefly testing out this method of aggregation
 
 # %%
-with open(Path('csd_output_mrtrix/average_response.txt')) as f:
-    mrtrix_response_function_string = f.readlines()[-1]
-print(list(map(float,mrtrix_response_function_string.strip().split(' '))))
+response_dir = Path('./test_response_agg')
 
 # %%
-response_mrtrix = AxSymShResponse(300,np.array(list(map(float,mrtrix_response_function_string.strip().split(' ')))))
+# randomly jitter the response function we have to create an artifical family of response functions
 
-# %% [markdown]
-# The 300 looks like it's coming from nowhere, but actually in dipy, the `response.S0` is only saved [here](https://github.com/dipy/dipy/blob/1d558fce90d38e71cc16ed4c7e48bf1116ae459b/dipy/reconst/csdeconv.py#L262) when you construct the `ConstrainedSphericalDeconvModel` object. When you call the `fit` method you can see [here](https://github.com/dipy/dipy/blob/1d558fce90d38e71cc16ed4c7e48bf1116ae459b/dipy/reconst/csdeconv.py#L289-L293) that the S0 value not used anywhere. It's only used in the `predict` method, which we are not really using here because we are not trying to simulate signals right now. So I think for the CSD fit to generate a FOD, the S0 value doesn't really matter.
+for i in range(1000):
+    new_response = (
+        response[0] * np.exp(np.random.randn(3)/5), # the second and third eigenvals should always be equal but whatevs
+        np.float32(response[1]) * np.exp(np.random.randn()/10)
+    )
+    write_dipy_response(new_response, response_dir/f"response{i}.txt")
 
-# %%
-sh_order = 8
-csd_model = ConstrainedSphericalDeconvModel(gtab, response_mrtrix, sh_order=sh_order)
-
-# %%
-csd_fit = csd_model.fit(data, mask=mask_data)
 
 # %%
-subject_output_file_alt = subject_output_file.parent / f"{subject_output_file.name.split('.')[0]}_mrtrixResponse.nii.gz"
-subject_output_file_alt
+def aggregate_dipy_response_functions(response_functions):
+    """ Aggregate a collection of dipy dti response functions.
+
+    This is useful for taking an average response function over a group when doing a population study.
+
+    The method is to take the geometric mean of the eigenvalues and the arithmetic mean of the non-diffusion-weighted signal.
+    The reason for taking the geometric mean of the eigenvalues is that this is exactly taking the Frechet mean of the diffusion
+    tensors that are represented by the eigenvalues when the tensors are treated as elements of the standard log-euclidean metric space
+    described in 
+
+        Arsigny, Vincent, et al. "Log‐Euclidean metrics for fast and simple calculus on diffusion tensors."
+        Magnetic Resonance in Medicine: An Official Journal of the International Society for Magnetic Resonance
+        in Medicine 56.2 (2006): 411-421.
+
+    Args:
+        response_functions: a sequence of response functions. a response function is the sort of thing
+            returned by dipy.reconst.csdeconv.response_from_mask_ssst
+    Returns: an aggregate response function.
+    """
+    
+    evals_array = np.array([rf[0] for rf in response_functions])
+    S0_array = np.array([rf[1] for rf in response_functions])
+    return np.exp(np.log(evals_array).mean(axis=0)), np.mean(S0_array)
+
+def aggregate_dipy_response_functions_workflow(response_dir, output_path):
+    """ Aggregate a collection of dipy dti response functions in a directory and write the output to a file.
+
+    This is useful for taking an average response function over a group when doing a population study.
+
+    See aggregate_dipy_response_functions for more details.
+
+    Args:
+        response_dir: a directory containing response functions as text files. (for example they
+            could be written out by write_dipy_response)
+        output_path: file path at which to save the aggregate response
+    """
+    response_file_paths = list(response_dir.glob("*.txt"))
+    if len(response_file_paths) == 0 :
+        raise FileNotFoundError(f"No response files found in {response_dir}")
+    response_functions = [read_dipy_response(response_file_path) for response_file_path in response_file_paths]
+    aggregate_response_function =  aggregate_dipy_response_functions(response_functions)
+    write_dipy_response(aggregate_response_function, output_path)
+
 
 # %%
-csd_fit
-
-# %%
-csd_shm_coeff = csd_fit.shm_coeff
-
-from dipy.reconst.shm import sph_harm_ind_list
-def get_dipy_to_mrtrix_permutation(sh_order):
-    m,l = sph_harm_ind_list(sh_order)
-    basis_indices = list(zip(l,m)) # dipy basis ordering
-    dimensionality = len(basis_indices)
-    basis_indices_permuted = list(zip(l,-m)) # mrtrix basis ordering
-    permutation = [basis_indices.index(basis_indices_permuted[i]) for i in range(dimensionality)] # dipy to mrtrix permution
-    return permutation
-csd_shm_coeff_mrtrix = csd_shm_coeff[:,:,:,get_dipy_to_mrtrix_permutation(sh_order)]
-subject_output_file_alt2 = subject_output_file.parent / f"{subject_output_file.name.split('.')[0]}_mrtrixResponse_mrtrixConverted.nii.gz"
-
-save_nifti(subject_output_file_alt, csd_shm_coeff, affine, img.header)
-print(f'saved {subject_output_file_alt}')
-save_nifti(subject_output_file_alt2, csd_shm_coeff_mrtrix, affine, img.header)
-print(f'saved {subject_output_file_alt2}')
-
-# %% [markdown]
-# I visually inspected three images using `mrview`:
-# - the mrtrix reconstruction using the mrtrix estimated average response function
-# - the dipy reconstruction using the dipy estimated average response function
-# - the dipy reconstruction using the mrtrix estimated average response function
-#
-# The latter two were both pretty bad looking (e.g. qualtiatively when looking at corpus callosum where the FODs should be extra sharp and clean) so I don't think my issue is only with response function generation.
-#
-# Maybe the dipy spherical harmonic basis order is different? So when I save the 45-channel coefficients list perhaps it's being misinterpreted by mrview? Based on [my investigation](https://github.com/dipy/dipy/discussions/2861#discussioncomment-7256439), no:
-
-# %%
-from dipy.reconst.shm import sph_harm_ind_list
-m,l = sph_harm_ind_list(8)
-print(list(zip(l,m)))
+aggregate_dipy_response_functions_workflow(response_dir, "/home/ebrahimebrahim/Desktop/agg.txt")
