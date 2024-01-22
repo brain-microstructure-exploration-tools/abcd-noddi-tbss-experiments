@@ -86,6 +86,8 @@ hd-bet -i b0_averages/ -o hdbet_output/
 
 ## Perform DTI fit
 
+This is optional.
+
 ```sh
 mkdir dti_output/
 python fit_dti.py extracted_images/ hdbet_output/ dti_output/
@@ -134,10 +136,12 @@ To carry out the DIPY processing instead:
 
 ```sh
 mkdir csd_output/
-python estimate_fods_dipy.py extracted_images/ hdbet_output/ dti_output/ csd_output/
+python estimate_fods_dipy.py extracted_images/ hdbet_output/ csd_output/
 ```
 
 Note: This pipeline is designed to work with the preprocessed ABCD images, and we have found that for these images the DIPY processing script must flip the x-axis of the b-vectors. [It's not clear why.](https://github.com/brain-microstructure-exploration-tools/abcd-noddi-tbss-experiments/issues/7#issuecomment-1828736081)
+
+Note: The output FODs are saved in the form of spherical harmonic coefficients using the conventions of MRtrix3, regardless of whether DIPY or MRtrix3 is used.
 
 ## Generate a population template
 
