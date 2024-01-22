@@ -1,6 +1,8 @@
 from pathlib import Path
 from dipy.reconst.shm import sph_harm_ind_list
 from typing import List
+import json
+import numpy as np
 
 def get_unique_file_with_extension(directory_path : Path, extension : str) -> Path:
     l = list(directory_path.glob(f'*.{extension}'))
@@ -41,3 +43,44 @@ def get_dipy_to_mrtrix_permutation(sh_degree:int) -> List[int]:
     basis_indices_permuted = list(zip(l,-m)) # mrtrix basis ordering
     permutation = [basis_indices.index(basis_indices_permuted[i]) for i in range(dimensionality)] # dipy to mrtrix permution
     return permutation
+
+
+def write_dipy_response(response, filename):
+    """
+    Write a dipy DTI response function to file.
+    
+    A dipy DTI response function has the form
+        (evals, S0)
+    where S0 is a non-diffusion weighted signal and where evals is a numpy array of the form
+        (lambda_1, lambda_2, lambda_2)
+    which represents a prolate diffusion tensor with unspecified orientation.
+
+    This sort of representation is output by dipy.reconst.csdeconv.response_from_mask_ssst
+    for example.
+    """
+
+    if not isinstance(response, tuple) or len(response) != 2:
+        raise ValueError("response should be a tuple of length two consisting of an eigenvalue array and an S0 value")
+    if not isinstance(response[0], np.ndarray) or response[0].shape != (3,):
+        raise ValueError("the first element of response should be a numpy array listing three eigenvalues")
+
+    with open(filename, 'w') as file:
+        json.dump(
+            [
+                [eval.item() for eval in response[0]],
+                response[1].item() # json won't serialize numpy float type, it has to be native python float, hence ".item()"
+            ],
+            file
+        )
+
+def read_dipy_response(filename):
+    """
+    Read a dipy DTI response function from file. See the docstring of `write_dipy_response`
+    to understand the form of the returned response function.
+    """
+    with open(filename, 'r') as file:
+        response_list = json.load(file)
+        return (
+            np.array(response_list[0], dtype=float),
+            np.float32(response_list[1])
+        )
