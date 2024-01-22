@@ -1,8 +1,14 @@
 extracted_images/
 b0_averages/
-hdbet_output
-noddi_output
-csd_output
+hdbet_output/
+noddi_output/
+csd_output/
+dti_output/
+HD-BET/
+conversion/
+
+# we use jupytext to pair notebooks with scripts and we try not to commit notebooks directly
+*.ipynb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

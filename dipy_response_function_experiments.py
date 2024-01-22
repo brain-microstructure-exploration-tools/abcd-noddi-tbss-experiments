@@ -18,9 +18,9 @@
 #
 # Here is how to use mrview to get the visualization going:
 # ```sh
-# INPUT_DIR=extracted_images/NDARINV1JXDFV9Z_2YearFollowUpYArm1_ABCD-MPROC-DTI_20181219171951/sub-NDARINV1JXDFV9Z/ses-2YearFollowUpYArm1/dwi/
-# STEM=sub-NDARINV1JXDFV9Z_ses-2YearFollowUpYArm1_run-01_dwi
-# mrview $INPUT_DIR/$STEM.nii -odf.load_sh csd_output_dipy/fod/${STEM}_fod.nii.gz
+# INPUT_DIR=extracted_images/NDARINV1JXDFV9Z_baselineYear1Arm1_ABCD-MPROC-DTI_20161206184105/sub-NDARINV1JXDFV9Z/ses-baselineYear1Arm1/dwi/
+# STEM=sub-NDARINV1JXDFV9Z_ses-baselineYear1Arm1_run-01_dwi
+# mrview $INPUT_DIR/$STEM.nii --fov 100 --voxel 69,69,84 -odf.load_sh csd_output_dipy/fod/${STEM}_fod.nii.gz
 # ```
 #
 # The first thing to look at is the response function. What happens if I use in the dipy approach the same response function that was generated using the mrtrix method.
@@ -47,6 +47,7 @@ output_dir_fod.mkdir(exist_ok=True)
 
 # %%
 dwi_nii_directory = np.random.choice(list(extracted_images_path.glob('*/*/*/dwi/')))
+dwi_nii_directory = Path('extracted_images/NDARINV1JXDFV9Z_baselineYear1Arm1_ABCD-MPROC-DTI_20161206184105/sub-NDARINV1JXDFV9Z/ses-baselineYear1Arm1/dwi/')
 
 # %%
 nii_path = get_unique_file_with_extension(dwi_nii_directory, 'nii')
@@ -56,15 +57,22 @@ subject_output_file = output_dir_fod/(nii_path.stem + '_fod.nii.gz')
 if subject_output_file.exists():
         print(f"Warning: output for subject {nii_path.stem} already exists at the file\n\t{subject_output_file}")
 
-bval_path = get_unique_file_with_extension(dwi_nii_directory, 'bval')
-bvec_path = get_unique_file_with_extension(dwi_nii_directory, 'bvec')
-bvals, bvecs = read_bvals_bvecs(str(bval_path), str(bvec_path))
-gtab = gradient_table(bvals, bvecs)
-
 mask_path = masks_path/(nii_path.stem + '_mask.nii.gz')
 
 data, affine, img = load_nifti(str(nii_path), return_img=True)
 mask_data, mask_affine, mask_img = load_nifti(str(mask_path), return_img=True)
+
+bval_path = get_unique_file_with_extension(dwi_nii_directory, 'bval')
+bvec_path = get_unique_file_with_extension(dwi_nii_directory, 'bvec')
+bvals, bvecs = read_bvals_bvecs(str(bval_path), str(bvec_path))
+
+# %%
+if np.linalg.det(affine[:3,:3]) < 0:
+    bvecs[:,0] = -bvecs[:,0]
+    print("Negating the x coordinate of all the b-vectors!")
+
+# %%
+gtab = gradient_table(bvals, bvecs)
 
 subject_dti_dir = dti_path/(nii_path.stem)
 if not subject_dti_dir.exists():
@@ -83,9 +91,33 @@ wm_mask = (np.logical_or(fa_data >= 0.4, (np.logical_and(fa_data >= 0.15, md_dat
 response = recursive_response(gtab, data, mask=wm_mask, sh_order=8, peak_thr=0.01, init_fa=0.08, init_trace=0.0021, iter=2, convergence=0.1, parallel=True)
 
 # %%
+sh_order = 8
+csd_model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=sh_order)
+csd_fit = csd_model.fit(data, mask=mask_data)
+csd_shm_coeff = csd_fit.shm_coeff
+subject_output_file_alt = subject_output_file.parent / f"{subject_output_file.name.split('.')[0]}_dipyTaxResponse_mrtrixConverted_bvecXflipped.nii.gz"
+from dipy.reconst.shm import sph_harm_ind_list
+def get_dipy_to_mrtrix_permutation(sh_order):
+    m,l = sph_harm_ind_list(sh_order)
+    basis_indices = list(zip(l,m)) # dipy basis ordering
+    dimensionality = len(basis_indices)
+    basis_indices_permuted = list(zip(l,-m)) # mrtrix basis ordering
+    permutation = [basis_indices.index(basis_indices_permuted[i]) for i in range(dimensionality)] # dipy to mrtrix permution
+    return permutation
+csd_shm_coeff_mrtrix = csd_shm_coeff[:,:,:,get_dipy_to_mrtrix_permutation(sh_order)]
+
+save_nifti(subject_output_file_alt, csd_shm_coeff_mrtrix, affine, img.header)
+print(f'saved {subject_output_file_alt}')
+
+# %% [markdown]
+# Below are legacy parts of this notebook.
+#
+# ----
+
+# %%
 with open(Path('csd_output_mrtrix/average_response.txt')) as f:
     mrtrix_response_function_string = f.readlines()[-1]
-list(map(float,mrtrix_response_function_string.strip().split(' ')))
+print(list(map(float,mrtrix_response_function_string.strip().split(' '))))
 
 # %%
 response_mrtrix = AxSymShResponse(300,np.array(list(map(float,mrtrix_response_function_string.strip().split(' ')))))
@@ -94,7 +126,8 @@ response_mrtrix = AxSymShResponse(300,np.array(list(map(float,mrtrix_response_fu
 # The 300 looks like it's coming from nowhere, but actually in dipy, the `response.S0` is only saved [here](https://github.com/dipy/dipy/blob/1d558fce90d38e71cc16ed4c7e48bf1116ae459b/dipy/reconst/csdeconv.py#L262) when you construct the `ConstrainedSphericalDeconvModel` object. When you call the `fit` method you can see [here](https://github.com/dipy/dipy/blob/1d558fce90d38e71cc16ed4c7e48bf1116ae459b/dipy/reconst/csdeconv.py#L289-L293) that the S0 value not used anywhere. It's only used in the `predict` method, which we are not really using here because we are not trying to simulate signals right now. So I think for the CSD fit to generate a FOD, the S0 value doesn't really matter.
 
 # %%
-csd_model = ConstrainedSphericalDeconvModel(gtab, response_mrtrix, sh_order=8)
+sh_order = 8
+csd_model = ConstrainedSphericalDeconvModel(gtab, response_mrtrix, sh_order=sh_order)
 
 # %%
 csd_fit = csd_model.fit(data, mask=mask_data)
@@ -108,8 +141,22 @@ csd_fit
 
 # %%
 csd_shm_coeff = csd_fit.shm_coeff
+
+from dipy.reconst.shm import sph_harm_ind_list
+def get_dipy_to_mrtrix_permutation(sh_order):
+    m,l = sph_harm_ind_list(sh_order)
+    basis_indices = list(zip(l,m)) # dipy basis ordering
+    dimensionality = len(basis_indices)
+    basis_indices_permuted = list(zip(l,-m)) # mrtrix basis ordering
+    permutation = [basis_indices.index(basis_indices_permuted[i]) for i in range(dimensionality)] # dipy to mrtrix permution
+    return permutation
+csd_shm_coeff_mrtrix = csd_shm_coeff[:,:,:,get_dipy_to_mrtrix_permutation(sh_order)]
+subject_output_file_alt2 = subject_output_file.parent / f"{subject_output_file.name.split('.')[0]}_mrtrixResponse_mrtrixConverted.nii.gz"
+
 save_nifti(subject_output_file_alt, csd_shm_coeff, affine, img.header)
 print(f'saved {subject_output_file_alt}')
+save_nifti(subject_output_file_alt2, csd_shm_coeff_mrtrix, affine, img.header)
+print(f'saved {subject_output_file_alt2}')
 
 # %% [markdown]
 # I visually inspected three images using `mrview`:
