@@ -1,42 +1,54 @@
-from dipy.reconst.shm import calculate_max_order, sph_harm_ind_list
+import argparse
+import json
 import numpy as np
+from common import get_degree_powers
+from pathlib import Path
+from dipy.io.image import load_nifti, save_nifti
 
-def get_degree_powers(fod_array):
-    """Compute "degree powers" of FODs expressed in terms of spherical harmonics.
+# === Parse args ===
 
-    The "power" at a specific degree l is the square-sum over all indices m of the spherical harmonic coefficinets c^m_l
-    at that given l.
+parser = argparse.ArgumentParser(description='computes degree powers from fiber orientation distributions')
+parser.add_argument('fod_path', type=str, help='path to folder containing fiber orientation distribution images')
+parser.add_argument('output_dir', type=str, help='path to folder in which to save the computed degree power images')
+args = parser.parse_args()
+fod_path = Path(args.fod_path)
+output_dir = Path(args.output_dir)
+l_values_path = output_dir/'l_values.txt'
+degree_power_image_path = output_dir/'degree_power_images'
+degree_power_image_path.mkdir(exist_ok=True)
 
-    The idea comes from
-       Bloy, Luke, and Ragini Verma. "Demons registration of high angular resolution diffusion images."
-       2010 IEEE International Symposium on Biomedical Imaging: From Nano to Macro. IEEE, 2010.
+if not fod_path.exists():
+    raise FileNotFoundError(f"Could not find {fod_path}")
 
-    Args:
-        fod_array: an array of even degree spherical harmonic coefficients in the last axis, in the standard ordering 
-            l=0, m= 0
-            l=2, m=-2,
-            l=2, m=-1,
-            l=2, m= 0,
-            l=2, m= 1,
-            l=2, m= 2,
-            l=4, m= -4,
-            ...
+first_l_values = None
+if l_values_path.exists():
+    with open(l_values_path, 'r') as l_values_file:
+        first_l_values = np.array(json.load(l_values_file), dtype=int)
 
-    Retuns: l_values, degree_powers
-        l_values: a 1D array listing the degrees
-        degree_powers: an array with the same shape as fod_array in all but the final axis. The final axis contains the powers
-            at the degrees in the ordering in which they are listed in l_values. So degree_powers[...,i] is the power of fod_array
-            in degree l=l_values[i].
-    """
-    sh_degree_max = calculate_max_order(fod_array.shape[-1])
-    m,l = sph_harm_ind_list(sh_degree_max)
-    l_values = np.unique(l)
-    return l_values, np.stack(
-        [
-            (fod_array[...,l==l_value]**2).sum(axis=-1)
-            for l_value in l_values
-        ],
-        axis=-1
-    )
+for fod_filepath in fod_path.glob('*.nii.gz'):
 
-# TODO add argparse and then processing code
+    basename = '_'.join(str(fod_filepath.name).split("_")[:-1]) # remove the trailing _fod.nii.gz
+    output_file_path = degree_power_image_path/f'{basename}_degreepowers.nii.gz'
+    if output_file_path.exists():
+        print(f"Skipping degree power computation for {basename} since the following output file exists:\n{output_file_path}")
+        continue
+
+    fod_data, affine, img = load_nifti(fod_filepath, return_img=True)
+
+    l_values, degree_powers = get_degree_powers(fod_data)
+
+    # save l-values to file if we didn't already. if we did, then ensure consistency. l-values should be same for all subjects
+    if first_l_values is None:
+        first_l_values = l_values
+        with open(l_values_path, 'w') as l_values_file:
+            json.dump(
+                l_values.astype(int).tolist(), # list of ints suitable for json serialization
+                l_values_file
+            )
+    else:
+        if not (l_values == first_l_values).all():
+            raise Exception("Inconsistency detected in the l-values list that describes the degree power image channel.")
+
+    save_nifti(output_file_path, degree_powers, affine, img.header)
+    print(f"computed and saved degree powers for for {basename}...")
+print("done")
