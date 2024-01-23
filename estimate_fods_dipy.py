@@ -4,12 +4,10 @@ from dipy.io.image import load_nifti, save_nifti
 from dipy.io import read_bvals_bvecs
 from dipy.core.gradients import gradient_table
 from common import get_unique_file_with_extension, write_dipy_response, read_dipy_response, aggregate_dipy_response_functions_workflow
-from dipy.reconst.csdeconv import recursive_response
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 from dipy.reconst.shm import convert_sh_descoteaux_tournier
 import numpy as np
 from dipy.reconst.csdeconv import mask_for_response_ssst, response_from_mask_ssst
-import matplotlib.pyplot as plt
 import warnings
 
 # === Parse args ===

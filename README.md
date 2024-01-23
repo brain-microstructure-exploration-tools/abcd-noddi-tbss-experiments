@@ -143,6 +143,24 @@ Note: This pipeline is designed to work with the preprocessed ABCD images, and w
 
 Note: The output FODs are saved in the form of spherical harmonic coefficients using the conventions of MRtrix3, regardless of whether DIPY or MRtrix3 is used.
 
+## Compute degree powers
+
+In this step we compute "degree powers" of FODs, going from FOD images to degree power images.
+
+The "power" at a specific degree $l$ is the square-sum over all indices $m$ of the spherical harmonic coefficinets $c^m_l$ at that given $l$:
+```math
+p_l = \sum_{m=-l}^{l} (c^m_l)^2
+```
+The idea comes from [Bloy 2010](https://doi.org/10.1109/ISBI.2010.5490161).
+This quantity $p_l$ is a useful derived feature because it is invariant to rotations of the function represented by spherical harmonic coefficents $c^m_l$.
+
+To compute degree powers:
+```sh
+mkdir degree_powers/
+python compute_degree_powers.py csd_output/fod degree_powers/
+```
+
+
 ## Generate a population template
 
 Here we use MRtrix3 to generate a FOD population template. Then:
