@@ -30,11 +30,12 @@ output_dir_response.mkdir(exist_ok=True)
 
 for dwi_nii_directory in extracted_images_path.glob('*/*/*/dwi/'):
 
-    nii_path = get_unique_file_with_extension(dwi_nii_directory, 'nii')
+    nii_path = get_unique_file_with_extension(dwi_nii_directory, 'nii.gz')
+    basename = nii_path.name.split('.')[0]
 
-    response_output_file = output_dir_response/(nii_path.stem + '_response.txt')
+    response_output_file = output_dir_response/(basename + '_response.txt')
     if response_output_file.exists():
-        print(f"Skipping response function estimate for {nii_path.stem} since the following output file exists:\n{response_output_file}")
+        print(f"Skipping response function estimate for {basename} since the following output file exists:\n{response_output_file}")
         continue
 
     bval_path = get_unique_file_with_extension(dwi_nii_directory, 'bval')
@@ -44,12 +45,12 @@ for dwi_nii_directory in extracted_images_path.glob('*/*/*/dwi/'):
     bvecs[:,0] = -bvecs[:,0] # https://github.com/brain-microstructure-exploration-tools/abcd-noddi-tbss-experiments/issues/7
     gtab = gradient_table(bvals, bvecs)
 
-    mask_path = masks_path/(nii_path.stem + '_mask.nii.gz')
+    mask_path = masks_path/(basename + '_mask.nii.gz')
 
     data, affine, img = load_nifti(str(nii_path), return_img=True)
     mask_data, mask_affine, mask_img = load_nifti(str(mask_path), return_img=True)
 
-    print(f"estimating response function for {nii_path.stem}...")
+    print(f"estimating response function for {basename}...")
 
     # b-values above 1200 aren't great for DTI estimation. dipy uses DTI to model response functions.
     low_b_mask = gtab.bvals <= 1200
@@ -95,11 +96,12 @@ aggregate_dipy_response_functions_workflow(output_dir_response, average_response
     
 for dwi_nii_directory in extracted_images_path.glob('*/*/*/dwi/'):
 
-    nii_path = get_unique_file_with_extension(dwi_nii_directory, 'nii')
+    nii_path = get_unique_file_with_extension(dwi_nii_directory, 'nii.gz')
+    basename = nii_path.name.split('.')[0]
 
-    subject_output_file = output_dir_fod/(nii_path.stem + '_fod.nii.gz')
+    subject_output_file = output_dir_fod/(basename + '_fod.nii.gz')
     if subject_output_file.exists():
-        print(f"Skipping {nii_path.stem} and assuming it was already processed since the following output file exists:\n{subject_output_file}")
+        print(f"Skipping {basename} and assuming it was already processed since the following output file exists:\n{subject_output_file}")
         continue
 
     bval_path = get_unique_file_with_extension(dwi_nii_directory, 'bval')
@@ -109,12 +111,12 @@ for dwi_nii_directory in extracted_images_path.glob('*/*/*/dwi/'):
     bvecs[:,0] = -bvecs[:,0] # https://github.com/brain-microstructure-exploration-tools/abcd-noddi-tbss-experiments/issues/7
     gtab = gradient_table(bvals, bvecs)
 
-    mask_path = masks_path/(nii_path.stem + '_mask.nii.gz')
+    mask_path = masks_path/(basename + '_mask.nii.gz')
 
     data, affine, img = load_nifti(str(nii_path), return_img=True)
     mask_data, mask_affine, mask_img = load_nifti(str(mask_path), return_img=True)
 
-    print(f"applying CSD to estimate FOD for {nii_path.stem}...")
+    print(f"applying CSD to estimate FOD for {basename}...")
 
     # below approach and parameters are taken from the example https://dipy.org/documentation/1.1.0./examples_built/reconst_csd/
     response = read_dipy_response(average_response_path)
@@ -122,6 +124,6 @@ for dwi_nii_directory in extracted_images_path.glob('*/*/*/dwi/'):
     csd_fit = csd_model.fit(data, mask=mask_data)
 
     csd_shm_coeff_mrtrix = convert_sh_descoteaux_tournier(csd_fit.shm_coeff)
-    print(f"processed {nii_path.stem}\nsaving data...")
+    print(f"processed {basename}\nsaving data...")
     save_nifti(subject_output_file, csd_shm_coeff_mrtrix, affine, img.header)
     print('saved!')

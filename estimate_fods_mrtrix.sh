@@ -26,10 +26,10 @@ mkdir -p $FOD_PATH
 
 # Estimate a response function for each image
 for DWI_PATH in "$EXTRACTED_IMAGES_PATH"/*/*/*/dwi/; do
-  DWI=$DWI_PATH/*.nii # we assume there is a unique .nii file in there, same for bval, bvec
+  DWI=$DWI_PATH/*.nii.gz # we assume there is a unique .nii.gz file in there, same for bval, bvec
   BVAL=$DWI_PATH/*.bval
   BVEC=$DWI_PATH/*.bvec
-  BASENAME=$(basename $DWI .nii)
+  BASENAME=$(basename $DWI .nii.gz)
   MASK=$MASKS_PATH/${BASENAME}_mask.nii.gz
   dwi2response dhollander $DWI $RESPONSE_PATH/WM/$BASENAME.txt $RESPONSE_PATH/GM/$BASENAME.txt $RESPONSE_PATH/CSF/$BASENAME.txt -fslgrad $BVEC $BVAL -mask $MASK
 done
@@ -43,10 +43,10 @@ responsemean $RESPONSE_PATH/CSF/*.txt $AVERAGE_RESPONSE_CSF
 
 # Estimate a FOD for each image
 for DWI_PATH in "$EXTRACTED_IMAGES_PATH"/*/*/*/dwi/; do
-  DWI=$DWI_PATH/*.nii # we assume there is a unique .nii file in there, same for bval, bvec
+  DWI=$DWI_PATH/*.nii.gz # we assume there is a unique .nii.gz file in there, same for bval, bvec
   BVAL=$DWI_PATH/*.bval
   BVEC=$DWI_PATH/*.bvec
-  BASENAME=$(basename $DWI .nii)
+  BASENAME=$(basename $DWI .nii.gz)
   MASK=$MASKS_PATH/${BASENAME}_mask.nii.gz
   dwi2fod msmt_csd $DWI $AVERAGE_RESPONSE_WM $FOD_PATH/${BASENAME}_fod.nii.gz -fslgrad $BVEC $BVAL -mask $MASK
 done

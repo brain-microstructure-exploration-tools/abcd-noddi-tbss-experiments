@@ -40,15 +40,16 @@ NODDI_mod.set_fixed_parameter('G1Ball_1_lambda_iso', 3e-9)
 
 for dwi_nii_directory in extracted_images_path.glob('*/*/*/dwi/'):
 
-    nii_path = get_unique_file_with_extension(dwi_nii_directory, 'nii')
+    nii_path = get_unique_file_with_extension(dwi_nii_directory, 'nii.gz')
+    basename = nii_path.name.split('.')[0]
 
-    subject_output_dir = output_dir/(nii_path.stem)
+    subject_output_dir = output_dir/basename
     if subject_output_dir.exists():
-        print(f"Skipping {nii_path.stem} and assuming it was already processed since the following output directory exists:\n{subject_output_dir}")
+        print(f"Skipping {basename} and assuming it was already processed since the following output directory exists:\n{subject_output_dir}")
         continue
     subject_output_dir.mkdir()
     def generate_output_filepath(noddi_output_name):
-        return subject_output_dir/(f"{nii_path.stem}_{noddi_output_name}.nii.gz")
+        return subject_output_dir/(f"{basename}_{noddi_output_name}.nii.gz")
 
     bval_path = get_unique_file_with_extension(dwi_nii_directory, 'bval')
     bvec_path = get_unique_file_with_extension(dwi_nii_directory, 'bvec')
@@ -57,12 +58,12 @@ for dwi_nii_directory in extracted_images_path.glob('*/*/*/dwi/'):
     bvals_SI = bvals * 1e6  # now given in SI units as s/m^2
     acq_scheme = acquisition_scheme_from_bvalues(bvals_SI, bvecs)
 
-    mask_path = masks_path/(nii_path.stem + '_mask.nii.gz')
+    mask_path = masks_path/(basename + '_mask.nii.gz')
 
     data, affine, img = load_nifti(str(nii_path), return_img=True)
     mask_data, mask_affine, mask_img = load_nifti(str(mask_path), return_img=True)
 
-    print(f"performing NODDI fit for {nii_path.stem}...")
+    print(f"performing NODDI fit for {basename}...")
 
     NODDI_fit = NODDI_mod.fit(acq_scheme, data, mask=mask_data)
 
@@ -75,7 +76,7 @@ for dwi_nii_directory in extracted_images_path.glob('*/*/*/dwi/'):
     mse = NODDI_fit.mean_squared_error(data)
     r2 = NODDI_fit.R2_coefficient_of_determination(data)
 
-    print(f"processed {nii_path.stem}\nsaving data...")
+    print(f"processed {basename}\nsaving data...")
     save_nifti(generate_output_filepath('odi'), odi, affine, img.header)
     save_nifti(generate_output_filepath('vf_intra'), vf_intra, affine, img.header)
     save_nifti(generate_output_filepath('vf_iso'), vf_iso, affine, img.header)

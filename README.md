@@ -41,14 +41,21 @@ Some steps are based on MRtrix3 and require that you [install MRtrix3](https://m
 
 ## Extracting files
 
-The downloaded data is in the form of `tgz` files that can be extracted to `nii` image files with bvals and bvecs provided as separate text files.
+The downloaded data is in the form of `tgz` files that can be extracted to image files with bvals and bvecs provided as separate text files in FSL format.
 
-Run the following command with `ARCHIVES_PATH` replaced by a path to the directory containing downloaded ABCD image `tgz` files:
+Since the ABCD Study is a multi-site study, we will need to keep track of study site to do some of the image processing correctly. This is done in a csv table with at least the following columns:
+
+- `filename`: This column contains the full filenames of the tgz files to be extracted.
+- `site_id_l`: This column contains the ID for the study site at which each image was acquired. It can be found in the table `abcd_y_lt` of the ABCD 5.0/5.1 release.
+
+Run the following command with `TABLE_PATH` replaced by a path to the csv table just described and with `ARCHIVES_PATH` replaced by a path to the directory containing downloaded ABCD image `tgz` files:
 
 ```sh
 mkdir extracted_images
-./extract_images.sh  ARCHIVES_PATH extracted_images/
+python ./extract_images.py  TABLE_PATH  ARCHIVES_PATH  extracted_images/
 ```
+
+Besides extracting archives, this will write a table to the `extracted_images/` directory that extends the input table by a column that indicates image file basenames.
 
 ## Generating NRRD Headers
 
