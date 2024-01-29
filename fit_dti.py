@@ -27,7 +27,7 @@ for dwi_nii_directory in extracted_images_path.glob('*/*/*/dwi/'):
     nii_path = get_unique_file_with_extension(dwi_nii_directory, 'nii.gz')
     basename = nii_path.name.split('.')[0]
 
-    subject_output_dir = output_dir/(nii_path.name)
+    subject_output_dir = output_dir/basename
     if subject_output_dir.exists():
         print(f"Skipping {basename} and assuming it was already processed since the following output directory exists:\n{subject_output_dir}")
         continue
