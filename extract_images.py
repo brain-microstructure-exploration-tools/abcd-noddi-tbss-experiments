@@ -9,7 +9,7 @@ import pandas as pd
 # === Parse args ===
 
 parser = argparse.ArgumentParser(description='extract downloaded ABCD Study images')
-parser.add_argument('table_path', type=str, help='path to csv table with a filename and site_id_l column')
+parser.add_argument('table_path', type=str, help='path to csv table with columns for filename, site_id_l, and mri_info_manufacturer')
 parser.add_argument('archive_path', type=str, help='path to folder ABCD images were downloaded (this folder would contain the .tgz files)')
 parser.add_argument('output_path', type=str, help='path to folder in which to put extracted ABCD images')
 args = parser.parse_args()

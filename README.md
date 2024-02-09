@@ -47,6 +47,7 @@ Since the ABCD Study is a multi-site study, we will need to keep track of study 
 
 - `filename`: This column contains the full filenames of the tgz files to be extracted.
 - `site_id_l`: This column contains the ID for the study site at which each image was acquired. It can be found in the table `abcd_y_lt` of the ABCD 5.0/5.1 release.
+- `mri_info_manufacturer`: This columns contains the manufacturer name for the MRI scanner for each image. It can be found in the table `mri_y_adm_info` of the ABCD 5.0/5.1 release.
 
 Run the following command with `TABLE_PATH` replaced by a path to the csv table just described and with `ARCHIVES_PATH` replaced by a path to the directory containing downloaded ABCD image `tgz` files:
 
