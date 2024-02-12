@@ -24,7 +24,9 @@ output_path.mkdir(exist_ok=True)
 df = pd.read_csv(table_path)
 filenames = []
 basenames = []
-for filename in df.filename:
+for i,row in df.iterrows():
+    filename = row.filename
+    is_phillips = row.mri_info_manufacturer == "Philips Medical Systems"
 
     archive_file_path = archive_path/filename
     extraction_target = output_path/(Path(filename).stem)
@@ -45,9 +47,17 @@ for filename in df.filename:
     img_path_list = nii_path_list + niigz_path_list
     if len(img_path_list) == 0:
         raise FileNotFoundError(f"Couldn't find any image file in {extraction_target}")
-    if len(img_path_list) > 1:
+    if (len(img_path_list) > 1 and not is_phillips) or (len(img_path_list) > 2 and is_phillips):
         img_path_list_formatted = '\n\t'.join(map(str,img_path_list))
-        raise Exception(f"Multiple image files were found in {extraction_target}:\n\t{img_path_list_formatted}")
+        raise Exception(f"Unexpected multiple image files were found in {extraction_target}:\n\t{img_path_list_formatted}")
+    if len(img_path_list) == 2 and is_phillips:
+        # In this case one of the files was already processed and converted to nii.gz, so by removing it we should reduce to the
+        # case where img_path_list has a unique element (an .nii or another also-processed .nii.gz)
+        if len(niigz_path_list) < 1:
+            raise Exception(f"Unexpected situation: Two image files are present as they should be for a Phillips scan, however they were both extracted to .nii without being recompressed to .nii.gz. This should not have happened. Consider deleting {extraction_target} and trying again.")
+        img_path_list = [p for p in img_path_list if p!=niigz_path_list[0]]
+        assert(len(img_path_list)==1)
+        print("Working on the second half of a phillips scan :D") # TODO: remove this line. it's just for testing
     img_file_path = img_path_list[0]
     basename = img_file_path.name.split('.')[0]
     filenames.append(filename)

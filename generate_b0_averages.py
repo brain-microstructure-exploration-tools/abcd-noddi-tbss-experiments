@@ -15,6 +15,8 @@ output_dir = Path(args.output_dir)
 for dwi_nii_directory in extracted_images_path.glob('*/*/*/dwi/'):
 
     nii_path = get_unique_file_with_extension(dwi_nii_directory, 'nii.gz')
+    # (Note that getting a unique file like this wouldn't work in general on an ABCD download if someone extracted everything to the same
+    # target folder instead of creating one folder for each archive as I did.)
     bval_path = get_unique_file_with_extension(dwi_nii_directory, 'bval')
     bvec_path = get_unique_file_with_extension(dwi_nii_directory, 'bvec')
 
