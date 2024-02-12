@@ -22,6 +22,10 @@ for dwi_nii_directory in extracted_images_path.glob('*/*/*/dwi/'):
 
     output_image_path = output_dir/(nii_path.name)
 
+    if output_image_path.exists():
+        print(f"found {nii_path.name}; skipping.")
+        continue
+
     data, affine, img = load_nifti(str(nii_path), return_img=True)
     bvals, bvecs = read_bvals_bvecs(str(bval_path), str(bvec_path))
     gtab = gradient_table(bvals, bvecs)
