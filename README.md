@@ -58,6 +58,11 @@ python ./extract_images.py  TABLE_PATH  ARCHIVES_PATH  extracted_images/
 
 Besides extracting archives, this will write a table to the `extracted_images/` directory that extends the input table by a column that indicates image file basenames.
 
+Any scans coming from the Phillips scanner must now be consolidated as the scanner generates two image files per acquisition:
+```sh
+python concatenate_scans.py ./extract_images.py
+```
+
 ## Generating NRRD Headers
 
 Install the tool at [this repo](https://github.com/pnlbwh/conversion):
