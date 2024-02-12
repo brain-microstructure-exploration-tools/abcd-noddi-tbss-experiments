@@ -26,6 +26,7 @@ output_dir_response = output_dir/'subject_response_functions'
 average_response_dir = output_dir/'group_response_functions'
 output_dir_fod.mkdir(exist_ok=True)
 output_dir_response.mkdir(exist_ok=True)
+average_response_dir.mkdir(exist_ok=True)
 site_df = pd.read_csv(extracted_images_path/'site_table.csv')
 
 # === Iterate through images, estimating response functions. ===
