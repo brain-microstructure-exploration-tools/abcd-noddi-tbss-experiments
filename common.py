@@ -76,7 +76,7 @@ def aggregate_dipy_response_functions(response_functions):
     S0_array = np.array([rf[1] for rf in response_functions])
     return np.exp(np.log(evals_array).mean(axis=0)), np.mean(S0_array)
 
-def aggregate_dipy_response_functions_workflow(response_dir, output_path):
+def aggregate_dipy_response_functions_workflow(response_file_paths, output_path):
     """ Aggregate a collection of dipy dti response functions in a directory and write the output to a file.
 
     This is useful for taking an average response function over a group when doing a population study.
@@ -84,13 +84,10 @@ def aggregate_dipy_response_functions_workflow(response_dir, output_path):
     See aggregate_dipy_response_functions for more details.
 
     Args:
-        response_dir: a directory containing response functions as text files. (for example they
+        response_file_paths: a sequence of paths to response functions as text files. (for example they
             could be written out by write_dipy_response)
         output_path: file path at which to save the aggregate response
     """
-    response_file_paths = list(response_dir.glob("*.txt"))
-    if len(response_file_paths) == 0 :
-        raise FileNotFoundError(f"No response files found in {response_dir}")
     response_functions = [read_dipy_response(response_file_path) for response_file_path in response_file_paths]
     aggregate_response_function =  aggregate_dipy_response_functions(response_functions)
     write_dipy_response(aggregate_response_function, output_path)
