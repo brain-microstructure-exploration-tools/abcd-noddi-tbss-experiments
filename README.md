@@ -173,6 +173,13 @@ mkdir degree_powers/
 python compute_degree_powers.py csd_output/fod degree_powers/
 ```
 
+To then normalize them so that they they become degree powers of spherical probability distributions:
+```sh
+mkdir degree_powers_normalized/
+python normalize_degree_powers.py degree_powers/
+```
+This will remove 
+
 
 ## Generate a population template
 
