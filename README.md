@@ -173,13 +173,17 @@ mkdir degree_powers/
 python compute_degree_powers.py csd_output/fod degree_powers/
 ```
 
-To then normalize them so that they they become degree powers of spherical probability distributions:
+To then normalize them to have the same spherical integral:
 ```sh
 mkdir degree_powers_normalized/
 python normalize_degree_powers.py degree_powers/
 ```
-This will remove 
-
+This will remove the l=0 channel since that would be a constant image.
+This step simply replaces $c^m_l$ by $c^m_l/c^0_0$ and provides the "degree power" that would result from that:
+```math
+p_l^\text{(normalized)} = \sum_{m=-l}^{l} (c^m_l/c^0_0)^2 = p_l/p_0
+```
+This is a type of normalization because the integral of a FOD over the sphere is proportional to $c^0_0$.
 
 ## Generate a population template
 
