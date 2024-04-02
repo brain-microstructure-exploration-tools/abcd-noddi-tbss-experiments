@@ -21,17 +21,12 @@ That last item on rigid body registration and resampling might be irrelevant in 
 
 ## Setup
 
-Set up two python 3.8 environments, a main one and one for dmipy.
-Install the required packages as follows:
+Set up a python environment as follows:
 ```sh
 python3.8 -m venv .venv
 . .venv/bin/activate
 pip install git+https://github.com/dipy/dipy.git@871b498c2bab8ad1c4961e2dbd594063bd877440
 pip install -r requirements.txt
-deactivate
-python3.8 -m venv .venv_dmipy
-. .venv_dmipy/bin/activate
-pip install -r requirements_dmipy.txt
 deactivate
 ```
 
@@ -108,15 +103,35 @@ python fit_dti.py extracted_images/ hdbet_output/ dti_output/
 
 ## Perform NODDI fit
 
-The NODDI fit takes a while to run. Almost 3 hours per image with parallel processing enabled on my 12-core machine.
+There are two approaches: [dmipy](https://github.com/AthenaEPI/dmipy) and [amico](https://github.com/daducci/AMICO). The dmipy approach requires a separate python environment and is very slow. The amico approach is fast, but it is a type of approximation that won't necessarily be where the actual best fit would converge.
 
-It uses [dmipy](https://github.com/AthenaEPI/dmipy), following [this tutorial](https://nbviewer.org/github/AthenaEPI/dmipy/blob/master/examples/tutorial_setting_up_acquisition_scheme.ipynb) for creating the acquisition scheme object and [this tutorial](https://nbviewer.org/github/AthenaEPI/dmipy/blob/master/examples/example_noddi_watson.ipynb) for constructing a Watson NODDI model.
+Currently we must choose one or the other approach. Ideally we'd want a combination that uses amico to make a fast initial guess and then uses an iterative technique to refine it. But this combination approach is not implemented.
 
-Remember to use the dmipy python environment that you set up above, not the main python environment.
+### AMICO approach
 
 ```sh
 mkdir noddi_output/
-python fit_watson_noddi.py extracted_images/ hdbet_output/ noddi_output/
+python fit_noddi_amico.py extracted_images/ hdbet_output/ noddi_output/
+```
+
+### DMIPY approach
+
+
+DMIPY needs a separate python environment. Here's what I had that worked with DMIPY:
+
+```
+python3.8 -m venv .venv_dmipy
+. .venv_dmipy/bin/activate
+pip install -r requirements_dmipy.txt
+```
+
+The DMIPY NODDI fit takes a while to run. Almost 3 hours per image with parallel processing enabled on my 12-core machine.
+
+The DMIPY approach follows [this tutorial](https://nbviewer.org/github/AthenaEPI/dmipy/blob/master/examples/tutorial_setting_up_acquisition_scheme.ipynb) for creating the acquisition scheme object and [this tutorial](https://nbviewer.org/github/AthenaEPI/dmipy/blob/master/examples/example_noddi_watson.ipynb) for constructing a Watson NODDI model.
+
+```sh
+mkdir noddi_output/
+python fit_watson_noddi_dmipy.py extracted_images/ hdbet_output/ noddi_output/
 ```
 
 ## Estimate FODs
