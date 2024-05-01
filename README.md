@@ -97,6 +97,15 @@ mkdir hdbet_output/
 hd-bet -i b0_averages/ -o hdbet_output/
 ```
 
+## Denoise
+
+Apply Patch2Self denoising. This step is optional and it currently _replaces_ the original image files with the denoised ones.
+
+```sh
+cp -r extracted_images/ extracted_images_before_denoising/ # Optionally, preserve the originals
+python denoise.py extracted_images/
+```
+
 ## Perform DTI fit
 
 This is optional.
