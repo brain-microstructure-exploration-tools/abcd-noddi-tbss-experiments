@@ -60,7 +60,16 @@ Besides extracting archives, this will write a table to the `extracted_images/` 
 
 Any scans coming from the Phillips scanner must now be consolidated as the scanner generates two image files per acquisition:
 ```sh
-python concatenate_scans.py ./extract_images.py
+python concatenate_scans.py extracted_images/
+```
+
+## Denoise
+
+Apply Patch2Self denoising. This step is optional and it currently _replaces_ the original image files with the denoised ones.
+
+```sh
+cp -r extracted_images/ extracted_images_before_denoising/ # Optionally, preserve the originals
+python denoise.py extracted_images/
 ```
 
 ## Generating NRRD Headers
@@ -95,15 +104,6 @@ Run brain extraction:
 ```sh
 mkdir hdbet_output/
 hd-bet -i b0_averages/ -o hdbet_output/
-```
-
-## Denoise
-
-Apply Patch2Self denoising. This step is optional and it currently _replaces_ the original image files with the denoised ones.
-
-```sh
-cp -r extracted_images/ extracted_images_before_denoising/ # Optionally, preserve the originals
-python denoise.py extracted_images/
 ```
 
 ## Perform DTI fit
