@@ -194,6 +194,26 @@ p_l^\text{(normalized)} = \sum_{m=-l}^{l} (c^m_l/c^0_0)^2 = p_l/p_0
 ```
 This is a type of normalization because the integral of a FOD over the sphere is proportional to $c^0_0$.
 
+## Compute tractography with segmentation and compute TOMs
+
+This step is not part of the NODDI-TBSS pipeline, but is included here for our convenience because we needed it for something unrelated.
+This step requires MRtrix3.
+The method has been ported over from [this script](https://github.com/brain-microstructure-exploration-tools/abcd-registration-experiments/blob/7e78678297f4eeba317418e6c313260ca642227a/evaluation_framework/single_subject_tractography.py).
+
+Install TractSeg (it can go into the main python environment being used for most of these steps):
+```sh
+pip install TractSeg
+```
+
+Compute peaks:
+```
+mkdir fod_peaks/
+./sh2peaks_batch.sh csd_output/ hdbet_output/ fod_peaks/
+```
+
+
+
+
 ## Generate a population template
 
 Here we use MRtrix3 to generate a FOD population template. Then:
