@@ -42,5 +42,5 @@ def denoise_dwi_nii_directory(dwi_nii_directory):
     print(f'{basename}: Done! Replaced {nii_path}')
 
 
-pool = multiprocessing.Pool()
+pool = multiprocessing.Pool(processes=3)
 pool.map(denoise_dwi_nii_directory, extracted_images_path.glob('*/*/*/dwi/'))
